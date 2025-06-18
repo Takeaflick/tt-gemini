@@ -1,0 +1,19 @@
+/*
+  This file defines our custom, self-hosted fonts.
+*/
+
+@font-face {
+  font-family: 'SF Pro Display Bold';
+  src: url('../public/fonts/SFProDisplay-Bold.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Neue Bold';
+  src: url('../public/fonts/HelveticaNeue-Bold.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}

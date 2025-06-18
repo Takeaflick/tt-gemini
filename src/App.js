@@ -288,7 +288,7 @@ export default function App() {
             const videoForRendering = document.createElement('video');
             videoForRendering.src = mainVideoUrl;
             videoForRendering.muted = true;
-            videoForRendering.crossOrigin = "anonymous";
+            videoForRendering.crossOrigin = "anonymous"; // CRITICAL FIX
 
             videoForRendering.onloadedmetadata = async () => {
                 const canvas = document.createElement('canvas');
@@ -310,7 +310,7 @@ export default function App() {
                 const logoImg = logoUrl ? await new Promise(res => { const i = new Image(); i.crossOrigin="anonymous"; i.onload = () => res(i); i.onerror = () => res(null); i.src = logoUrl; }) : null;
                 const bottomMediaImg = (currentTemplate === 'split' && bottomMediaType === 'image' && bottomMediaUrl) ? await new Promise(res => { const i = new Image(); i.crossOrigin="anonymous"; i.onload = () => res(i); i.onerror = () => res(null); i.src = bottomMediaUrl; }) : null;
                 const bottomVideoForRendering = (currentTemplate === 'split' && bottomMediaType === 'video' && bottomMediaUrl) ? document.createElement('video') : null;
-                if(bottomVideoForRendering) { bottomVideoForRendering.src = bottomMediaUrl; bottomVideoForRendering.muted = true; bottomVideoForRendering.crossOrigin = "anonymous"; }
+                if(bottomVideoForRendering) { bottomVideoForRendering.src = bottomMediaUrl; bottomVideoForRendering.muted = true; bottomVideoForRendering.crossOrigin = "anonymous"; } // CRITICAL FIX
                 
                 const duration = videoForRendering.duration;
                 const frameRate = 30;

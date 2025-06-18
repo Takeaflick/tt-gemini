@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Plus, X, Film, Image as ImageIcon, Download, Trash2, Move, ChevronsLeft, ChevronsRight, CornerUpLeft, CornerUpRight, CornerDownLeft, CornerDownRight, Rows, Columns, AlignCenter } from 'lucide-react';
-import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
 
 // --- Helper Functions ---
 const formatTime = (timeInSeconds) => {
@@ -149,28 +150,31 @@ export default function App() {
     const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
 
     // Load FFmpeg
-    useEffect(() => {
-        const loadFFmpeg = async () => {
-            if (!ffmpegRef.current) {
-                ffmpegRef.current = createFFmpeg({
-                    log: true,
-                    corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js'
-                });
-            }
+ useEffect(() => {
+    const loadFFmpeg = async () => {
+        if (!ffmpegRef.current) {
+            const ffmpeg = new FFmpeg();
+            ffmpegRef.current = ffmpeg;
             
-            if (!ffmpegRef.current.isLoaded()) {
-                try {
-                    await ffmpegRef.current.load();
-                    setFfmpegLoaded(true);
-                    console.log('FFmpeg loaded successfully');
-                } catch (error) {
-                    console.error('Failed to load FFmpeg:', error);
-                }
+            ffmpeg.on('log', ({ message }) => {
+                console.log(message);
+            });
+            
+            try {
+                await ffmpeg.load({
+                    coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+                    wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm',
+                });
+                setFfmpegLoaded(true);
+                console.log('FFmpeg loaded successfully');
+            } catch (error) {
+                console.error('Failed to load FFmpeg:', error);
             }
-        };
-        
-        loadFFmpeg();
-    }, []);
+        }
+    };
+    
+    loadFFmpeg();
+}, []);
 
     // Effect for creating Object URLs
     useEffect(() => {
@@ -438,26 +442,26 @@ export default function App() {
                         const ffmpeg = ffmpegRef.current;
                         
                         // Write the WebM file to FFmpeg's virtual file system
-                        ffmpeg.FS('writeFile', 'input.webm', await fetchFile(webmBlob));
+                       await ffmpeg.writeFile('input.webm', await fetchFile(webmBlob));
                         
                         // Convert to MP4
-                        await ffmpeg.run(
-                            '-i', 'input.webm',
-                            '-c:v', 'libx264',
-                            '-preset', 'fast',
-                            '-crf', '22',
-                            '-c:a', 'aac',
-                            '-b:a', '128k',
-                            'output.mp4'
-                        );
+                       await ffmpeg.exec([
+    '-i', 'input.webm',
+    '-c:v', 'libx264',
+    '-preset', 'fast',
+    '-crf', '22',
+    '-c:a', 'aac',
+    '-b:a', '128k',
+    'output.mp4'
+]);
                         
                         // Read the output file
-                        const data = ffmpeg.FS('readFile', 'output.mp4');
-                        const mp4Blob = new Blob([data.buffer], { type: 'video/mp4' });
+const data = await ffmpeg.readFile('output.mp4');
+const mp4Blob = new Blob([data], { type: 'video/mp4' });
                         
                         // Clean up
-                        ffmpeg.FS('unlink', 'input.webm');
-                        ffmpeg.FS('unlink', 'output.mp4');
+                        await ffmpeg.deleteFile('input.webm');
+                        await ffmpeg.deleteFile('output.mp4');
                         
                         // Download MP4
                         const url = URL.createObjectURL(mp4Blob);

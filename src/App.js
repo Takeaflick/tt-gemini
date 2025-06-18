@@ -690,12 +690,19 @@ export default function App() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label htmlFor="fontFamily" className="block text-sm font-medium text-gray-400 mb-1">Font</label>
-                                    <select id="fontFamily" value={currentCaption.fontFamily} onChange={e => setCurrentCaption({...currentCaption, fontFamily: e.target.value})} className="w-full bg-gray-800 border border-gray-700 rounded-md p-2">
-                                        <option>SF Pro Display Bold</option>
-                                        <option>Helvetica Neue Bold</option>
-                                        <option>Montserrat</option>
-                                        <option>Proxima Nova Semi Bold</option>
-                                    </select>
+<select 
+    id="fontFamily" 
+    value={currentCaption.fontFamily} 
+    onChange={e => setCurrentCaption({...currentCaption, fontFamily: e.target.value})} 
+    className="w-full bg-gray-800 border border-gray-700 rounded-md p-2"
+>
+    <option>SF Pro Display Bold</option>
+    <option>Helvetica Neue Bold</option>
+    <option>Inter</option>
+    <option>Roboto</option>
+    <option>Montserrat</option>
+    <option>Lato</option>
+</select>
                                 </div>
                                 <div>
                                     <label htmlFor="fontSize" className="block text-sm font-medium text-gray-400 mb-1">Size ({currentCaption.fontSize}px)</label>

@@ -35,7 +35,7 @@ const Notification = ({ message, onDismiss }) => {
 };
 
 const EmojiPicker = ({ onSelect }) => {
-    const emojis = ['😊', '😂', '❤️', '👍', '🔥', '🎉', '🤯', '🤔', '👀', '💯', '✨', '🙏', '🙌', '💀', '😭', '👇', '👉', '👈', '👆', '✅', '❌', '➡️', '⬅️', '⬆️', '⬇️', '🚀', '💡', '💰', '📈', '📉', '⚠️', 'TikTok'];
+    const emojis = ['😊', '😂', '❤️', '👍', '🔥', '🎉', '🤯', '🤔', '👀', '💯', '✨', '🙏', '🙌', '💀', '😭', '👇', '👉', '👈', '👆', '✅', '❌', '➡️', '⬅️', '⬆️', '⬇️', '🚀', '💡', '�', '📈', '📉', '⚠️', 'TikTok'];
     const [isOpen, setIsOpen] = useState(false);
 
     return (
@@ -244,7 +244,7 @@ export default function App() {
             
             setExportMessage('Step 1/2: Rendering video frames...');
             const videoBlob = await renderToBlob();
-            if (!videoBlob) throw new Error("Video rendering failed and produced an empty file.");
+            if (!videoBlob || videoBlob.size === 0) throw new Error("Video rendering failed and produced an empty file.");
             
             setExportMessage('Step 2/2: Encoding to MP4...');
             setExportProgress(0); 
@@ -288,7 +288,7 @@ export default function App() {
             const videoForRendering = document.createElement('video');
             videoForRendering.src = mainVideoUrl;
             videoForRendering.muted = true;
-            videoForRendering.crossOrigin = "anonymous"; // CRITICAL FIX
+            videoForRendering.crossOrigin = "anonymous";
 
             videoForRendering.onloadedmetadata = async () => {
                 const canvas = document.createElement('canvas');
@@ -310,7 +310,7 @@ export default function App() {
                 const logoImg = logoUrl ? await new Promise(res => { const i = new Image(); i.crossOrigin="anonymous"; i.onload = () => res(i); i.onerror = () => res(null); i.src = logoUrl; }) : null;
                 const bottomMediaImg = (currentTemplate === 'split' && bottomMediaType === 'image' && bottomMediaUrl) ? await new Promise(res => { const i = new Image(); i.crossOrigin="anonymous"; i.onload = () => res(i); i.onerror = () => res(null); i.src = bottomMediaUrl; }) : null;
                 const bottomVideoForRendering = (currentTemplate === 'split' && bottomMediaType === 'video' && bottomMediaUrl) ? document.createElement('video') : null;
-                if(bottomVideoForRendering) { bottomVideoForRendering.src = bottomMediaUrl; bottomVideoForRendering.muted = true; bottomVideoForRendering.crossOrigin = "anonymous"; } // CRITICAL FIX
+                if(bottomVideoForRendering) { bottomVideoForRendering.src = bottomMediaUrl; bottomVideoForRendering.muted = true; bottomVideoForRendering.crossOrigin = "anonymous"; }
                 
                 const duration = videoForRendering.duration;
                 const frameRate = 30;

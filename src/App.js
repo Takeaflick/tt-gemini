@@ -831,10 +831,52 @@ const mp4Blob = new Blob([data], { type: 'video/mp4' });
                                         onLoadedMetadata={handleVideoMetadata}
                                         onTimeUpdate={handleTimeUpdate}
                                     />
-                                    {currentTemplate === 'split' && (
-                                        <div className="relative w-full h-1/2 bg-gray-900 flex items-center justify-center">
-                                           {currentTemplate === 'split' && (
+                                   {currentTemplate === 'split' && (
     <div className="relative w-full h-1/2 bg-gray-900 flex items-center justify-center overflow-hidden">
+        {bottomMediaUrl ? (
+            <div 
+                className="relative w-full h-full cursor-move"
+                onMouseDown={startPanning}
+                onTouchStart={startPanning}
+                style={{ cursor: bottomZoom > 100 ? (isPanning ? 'grabbing' : 'grab') : 'default' }}
+            >
+                {bottomMediaType === 'video' ? (
+                    <video 
+                        ref={bottomVideoRef} 
+                        src={bottomMediaUrl} 
+                        muted={muteBottomAudio} 
+                        loop 
+                        playsInline 
+                        className="w-full h-full object-cover" 
+                        style={{
+                            transform: `scale(${bottomZoom / 100}) translate(${bottomPanX}px, ${bottomPanY}px)`,
+                            transition: isPanning ? 'none' : 'transform 0.1s ease'
+                        }}
+                    />
+                ) : (
+                    <img 
+                        src={bottomMediaUrl} 
+                        alt="Bottom media" 
+                        className="w-full h-full object-cover" 
+                        style={{
+                            transform: `scale(${bottomZoom / 100}) translate(${bottomPanX}px, ${bottomPanY}px)`,
+                            transition: isPanning ? 'none' : 'transform 0.1s ease'
+                        }}
+                    />
+                )}
+                {bottomZoom > 100 && (
+                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                        Drag to pan
+                    </div>
+                )}
+            </div>
+        ) : (
+            <div className="text-gray-400">
+                <p>Select bottom media</p>
+            </div>
+        )}
+    </div>
+)}
         {bottomMediaUrl ? (
             <div 
                 className="relative w-full h-full cursor-move"

@@ -141,11 +141,6 @@ export default function App() {
     const [exportProgress, setExportProgress] = useState(0);
     const [exportMessage, setExportMessage] = useState('');
 
-  const [bottomPanX, setBottomPanX] = useState(0);
-  const [bottomPanY, setBottomPanY] = useState(0);
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStartPoint, setPanStartPoint] = useState({ x: 0, y: 0 });
-
     // Refs
     const mainVideoRef = useRef(null);
     const bottomVideoRef = useRef(null);
@@ -214,56 +209,26 @@ export default function App() {
         }
     };
     
-   const setupSplitScreenSync = useCallback(() => {
-    if (currentTemplate === 'split' && mainVideoRef.current && bottomVideoRef.current && bottomMediaType === 'video') {
-        const main = mainVideoRef.current;
-        const bottom = bottomVideoRef.current;
+    const setupSplitScreenSync = useCallback(() => {
+        if (currentTemplate === 'split' && mainVideoRef.current && bottomVideoRef.current) {
+            const main = mainVideoRef.current;
+            const bottom = bottomVideoRef.current;
 
-        // Sync functions
-        const syncPlay = () => {
-            if (!main.paused) {
-                bottom.play();
-            }
-        };
-        
-        const syncPause = () => {
-            if (main.paused) {
-                bottom.pause();
-            }
-        };
-        
-        const syncSeek = () => {
-            if (Math.abs(main.currentTime - bottom.currentTime) > 0.1) {
-                bottom.currentTime = main.currentTime;
-            }
-        };
-        
-        const syncTime = () => {
-            if (Math.abs(main.currentTime - bottom.currentTime) > 0.5) {
-                bottom.currentTime = main.currentTime;
-            }
-        };
-        
-        // Add event listeners
-        main.addEventListener('play', syncPlay);
-        main.addEventListener('pause', syncPause);
-        main.addEventListener('seeked', syncSeek);
-        main.addEventListener('timeupdate', syncTime);
-        
-        // Initial sync
-        bottom.currentTime = main.currentTime;
-        if (!main.paused) {
-            bottom.play();
+            const syncPlay = () => !bottom.paused && main.play();
+            const syncPause = () => !main.paused && bottom.pause();
+            const syncSeek = () => { if (Math.abs(main.currentTime - bottom.currentTime) > 0.1) { bottom.currentTime = main.currentTime; }};
+            
+            main.addEventListener('play', syncPlay);
+            main.addEventListener('pause', syncPause);
+            main.addEventListener('seeked', syncSeek);
+
+            return () => {
+                main.removeEventListener('play', syncPlay);
+                main.removeEventListener('pause', syncPause);
+                main.removeEventListener('seeked', syncSeek);
+            };
         }
-
-        return () => {
-            main.removeEventListener('play', syncPlay);
-            main.removeEventListener('pause', syncPause);
-            main.removeEventListener('seeked', syncSeek);
-            main.removeEventListener('timeupdate', syncTime);
-        };
-    }
-}, [currentTemplate, bottomMediaType]);
+    }, [currentTemplate]);
 
     useEffect(setupSplitScreenSync, [setupSplitScreenSync]);
 
@@ -371,70 +336,6 @@ export default function App() {
             document.removeEventListener('touchend', stopDragging);
         };
     }, [handleDrag, stopDragging]);
-
-  const startPanning = useCallback((e) => {
-    if (currentTemplate !== 'split' || !bottomMediaUrl) return;
-    
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-    const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-    
-    setPanStartPoint({ x: clientX - bottomPanX, y: clientY - bottomPanY });
-    setIsPanning(true);
-    
-    if (e.type.includes('mouse')) {
-        document.addEventListener('mousemove', handlePan);
-        document.addEventListener('mouseup', stopPanning);
-    } else {
-        document.addEventListener('touchmove', handlePan, { passive: false });
-        document.addEventListener('touchend', stopPanning);
-    }
-}, [currentTemplate, bottomMediaUrl, bottomPanX, bottomPanY]);
-
-const handlePan = useCallback((e) => {
-    if (!isPanning) return;
-    e.preventDefault();
-    
-    const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-    const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-    
-    const maxPan = ((bottomZoom / 100) - 1) * 50;
-    
-    const newX = Math.max(-maxPan, Math.min(maxPan, clientX - panStartPoint.x));
-    const newY = Math.max(-maxPan, Math.min(maxPan, clientY - panStartPoint.y));
-    
-    setBottomPanX(newX);
-    setBottomPanY(newY);
-}, [isPanning, panStartPoint, bottomZoom]);
-
-const stopPanning = useCallback(() => {
-    setIsPanning(false);
-    document.removeEventListener('mousemove', handlePan);
-    document.removeEventListener('mouseup', stopPanning);
-    document.removeEventListener('touchmove', handlePan);
-    document.removeEventListener('touchend', stopPanning);
-}, [handlePan]);
-
-  // 4. Clean up pan listeners on unmount:
-useEffect(() => {
-    return () => {
-        document.removeEventListener('mousemove', handlePan);
-        document.removeEventListener('mouseup', stopPanning);
-        document.removeEventListener('touchmove', handlePan);
-        document.removeEventListener('touchend', stopPanning);
-    };
-}, [handlePan, stopPanning]);
-
-  // 5. Reset pan when zoom changes:
-useEffect(() => {
-    if (bottomZoom === 100) {
-        setBottomPanX(0);
-        setBottomPanY(0);
-    }
-}, [bottomZoom]);
-  
 
     // Helper function to download WebM
     const downloadWebM = (blob) => {
@@ -831,96 +732,19 @@ const mp4Blob = new Blob([data], { type: 'video/mp4' });
                                         onLoadedMetadata={handleVideoMetadata}
                                         onTimeUpdate={handleTimeUpdate}
                                     />
-                                   {currentTemplate === 'split' && (
-    <div className="relative w-full h-1/2 bg-gray-900 flex items-center justify-center overflow-hidden">
-        {bottomMediaUrl ? (
-            <div 
-                className="relative w-full h-full cursor-move"
-                onMouseDown={startPanning}
-                onTouchStart={startPanning}
-                style={{ cursor: bottomZoom > 100 ? (isPanning ? 'grabbing' : 'grab') : 'default' }}
-            >
-                {bottomMediaType === 'video' ? (
-                    <video 
-                        ref={bottomVideoRef} 
-                        src={bottomMediaUrl} 
-                        muted={muteBottomAudio} 
-                        loop 
-                        playsInline 
-                        className="w-full h-full object-cover" 
-                        style={{
-                            transform: `scale(${bottomZoom / 100}) translate(${bottomPanX}px, ${bottomPanY}px)`,
-                            transition: isPanning ? 'none' : 'transform 0.1s ease'
-                        }}
-                    />
-                ) : (
-                    <img 
-                        src={bottomMediaUrl} 
-                        alt="Bottom media" 
-                        className="w-full h-full object-cover" 
-                        style={{
-                            transform: `scale(${bottomZoom / 100}) translate(${bottomPanX}px, ${bottomPanY}px)`,
-                            transition: isPanning ? 'none' : 'transform 0.1s ease'
-                        }}
-                    />
-                )}
-                {bottomZoom > 100 && (
-                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-                        Drag to pan
-                    </div>
-                )}
-            </div>
-        ) : (
-            <div className="text-gray-400">
-                <p>Select bottom media</p>
-            </div>
-        )}
-    </div>
-)}
-        {bottomMediaUrl ? (
-            <div 
-                className="relative w-full h-full cursor-move"
-                onMouseDown={startPanning}
-                onTouchStart={startPanning}
-                style={{ cursor: bottomZoom > 100 ? (isPanning ? 'grabbing' : 'grab') : 'default' }}
-            >
-                {bottomMediaType === 'video' ? (
-                    <video 
-                        ref={bottomVideoRef} 
-                        src={bottomMediaUrl} 
-                        muted={muteBottomAudio} 
-                        loop 
-                        playsInline 
-                        className="w-full h-full object-cover" 
-                        style={{
-                            transform: `scale(${bottomZoom / 100}) translate(${bottomPanX}px, ${bottomPanY}px)`,
-                            transition: isPanning ? 'none' : 'transform 0.1s ease'
-                        }}
-                    />
-                ) : (
-                    <img 
-                        src={bottomMediaUrl} 
-                        alt="Bottom media" 
-                        className="w-full h-full object-cover" 
-                        style={{
-                            transform: `scale(${bottomZoom / 100}) translate(${bottomPanX}px, ${bottomPanY}px)`,
-                            transition: isPanning ? 'none' : 'transform 0.1s ease'
-                        }}
-                    />
-                )}
-                {bottomZoom > 100 && (
-                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-                        Drag to pan
-                    </div>
-                )}
-            </div>
-        ) : (
-            <div className="text-gray-400">
-                <p>Select bottom media</p>
-            </div>
-        )}
-    </div>
-)}
+                                    {currentTemplate === 'split' && (
+                                        <div className="relative w-full h-1/2 bg-gray-900 flex items-center justify-center">
+                                            {bottomMediaUrl ? (
+                                                <>
+                                                    {bottomMediaType === 'video' ? (
+                                                        <video ref={bottomVideoRef} src={bottomMediaUrl} muted={muteBottomAudio} loop playsInline className="w-full h-full object-cover" style={{transform: `scale(${bottomZoom / 100})`}}/>
+                                                    ) : (
+                                                        <img src={bottomMediaUrl} alt="Bottom media" className="w-full h-full object-cover" style={{transform: `scale(${bottomZoom / 100})`}}/>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <div className="text-gray-400">
+                                                    <p>Select bottom media</p>
                                                 </div>
                                             )}
                                         </div>
@@ -1084,17 +908,6 @@ const mp4Blob = new Blob([data], { type: 'video/mp4' });
                                         <input type="checkbox" checked={muteBottomAudio} onChange={e => setMuteBottomAudio(e.target.checked)} className="w-4 h-4" />
                                         <span>Mute bottom video audio</span>
                                     </label>
-                              {bottomZoom > 100 && (
-    <div className="mt-3 text-sm text-gray-400">
-        <p>✓ Drag the {bottomMediaType} to pan when zoomed</p>
-        <button 
-            onClick={() => { setBottomPanX(0); setBottomPanY(0); }}
-            className="mt-1 text-blue-400 hover:text-blue-300"
-        >
-            Reset Position
-        </button>
-    </div>
-)}
                                 </div>
                             )}
                              <div className="bg-gray-800 p-3 rounded-md">
